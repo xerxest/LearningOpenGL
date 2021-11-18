@@ -27,6 +27,23 @@ int main(void)
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
+    float myfloats[] = {-0.5f, -0.5f, 0.0f, 0.5f, 0.5f,-0.5f };
+
+
+    unsigned int mybuff;
+
+    glGenBuffers(1, &mybuff);
+
+    std::cout << mybuff << std::endl;
+
+    glBindBuffer(GL_ARRAY_BUFFER, mybuff);
+    
+    glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(float),myfloats,mybuff);
+
+    //glVertexAttribPointer(0, 2 * sizeof(float));
+
+    
+
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
