@@ -17,6 +17,32 @@ const char* fragmentShaderSource = "#version 330 core\n"
 
 //static int CreateShader(const std::string& )
 
+
+static void GLClearError() {
+    while (glGetError() != GL_NO_ERROR);
+}
+
+static void GLCheckError() {
+
+    while (GLenum error = glGetError()) {
+
+        std::cout << "[OpenGL Error] (" << error << ")" << std::endl;
+    }
+}
+
+static void GLAPIENTRY MessageCallback(GLenum source,
+    GLenum type,
+    GLuint id,
+    GLenum severity,
+    GLsizei length,
+    const GLchar* message,
+    const void* userParam)
+{
+    fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+        (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+        type, severity, message);
+}
+    
 int main(void)
 {
     glEnable(GL_DEBUG_OUTPUT);
@@ -27,6 +53,8 @@ int main(void)
     if (!glfwInit())
         return -1;
 
+
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT,GL_TRUE);
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
     if (!window)
@@ -38,16 +66,21 @@ int main(void)
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
+
     if (glewInit() != GLEW_OK) {
         std::cout << "Glew init Error" << std::endl;
     }
 
-    std::cout << glGetString(GL_VERSION) << std::endl;
+    glDebugMessageCallback(MessageCallback, 0);
+
+    //std::cout << glGetString(GL_VERSION) << std::endl;
+
 
     unsigned int vertexShader;
+
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
 
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glShaderSource(vertexShader, 1,&vertexShaderSource, NULL);
     glCompileShader(vertexShader);
 
     int success;
@@ -81,17 +114,17 @@ int main(void)
     glAttachShader(shaderProgram, fragmentShader);
 
     glLinkProgram(shaderProgram);
-
-
+    glValidateProgram(shaderProgram);
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
 
     if (!success) {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
     }
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
 
 
 
@@ -109,7 +142,7 @@ int main(void)
 
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*2 ,0);
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float) ,0);
 
     
 
@@ -120,7 +153,11 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shaderProgram);
-        glDrawElements(GL_TRIANGLES,3,GL_UNSIGNED_INT,NULL);
+       
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+       // glDrawElements(GL_TRIANGLES,3,GL_UNSIGNED_INT,0);
+
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
