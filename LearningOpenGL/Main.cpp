@@ -1,6 +1,11 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include "Render.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
+#include "VertexArray.h";
+#include "Shader.h";
 
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
@@ -10,38 +15,11 @@ const char* vertexShaderSource = "#version 330 core\n"
 "}\0";
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
+"uniform vec4 u_Color;\n"
 "void main()\n"
 "{\n"
-"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"   FragColor = u_Color;\n"
 "}\n\0";
-
-//static int CreateShader(const std::string& )
-
-
-static void GLClearError() {
-    while (glGetError() != GL_NO_ERROR);
-}
-
-static void GLCheckError() {
-
-    while (GLenum error = glGetError()) {
-
-        std::cout << "[OpenGL Error] (" << error << ")" << std::endl;
-    }
-}
-
-static void GLAPIENTRY MessageCallback(GLenum source,
-    GLenum type,
-    GLuint id,
-    GLenum severity,
-    GLsizei length,
-    const GLchar* message,
-    const void* userParam)
-{
-    fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-        (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
-        type, severity, message);
-}
     
 int main(void)
 {
@@ -73,78 +51,37 @@ int main(void)
 
     glDebugMessageCallback(MessageCallback, 0);
 
-    //std::cout << glGetString(GL_VERSION) << std::endl;
+
+    Shader shader(vertexShaderSource, fragmentShaderSource);
+    shader.Bind();
+    shader.SetUniform4f("u_Color", 0.2f, 0.3f, 0.8f, 1.0f);
 
 
-    unsigned int vertexShader;
+    float myfloats[] = {
+       -0.5f, -0.5f, // 0 
+        0.5f, -0.5f, // 1
+        0.5f,  0.5f,  // 2
+       -0.5f,  0.5f  // 3
+    };
 
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-    glShaderSource(vertexShader, 1,&vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << std::endl;
-    }
-
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-    glShaderSource(fragmentShader, 1,&fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << std::endl;
-    }
-
-    // link shaders 
-
-    unsigned int shaderProgram = glCreateProgram();
-
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-
-    glLinkProgram(shaderProgram);
-    glValidateProgram(shaderProgram);
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-
-
-
-    float myfloats[6] = {
-       -0.5f, -0.5f, 
-        0.0f,  0.5f, 
-        0.5f, -0.5f 
+    unsigned int indices[] = {
+        0, 1, 2,
+        2, 3, 0
     };
 
 
-    unsigned int mybuff;
-    glGenBuffers(1, &mybuff);
-    glBindBuffer(GL_ARRAY_BUFFER, mybuff);
-    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float),myfloats, GL_STATIC_DRAW);
+    VertexBuffer vb(myfloats, 4 * 2 * sizeof(float));
+    IndexBuffer ib(indices,6);
 
+    VertexArray va;
+    VertexBufferLayout layout;
+    layout.Push<float>(2);
+    va.AddBuffer(vb, layout);
+  
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float) ,0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
-    
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
@@ -152,11 +89,13 @@ int main(void)
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
-       
 
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-       // glDrawElements(GL_TRIANGLES,3,GL_UNSIGNED_INT,0);
+        va.Bind();
+        ib.Bind();
+        
+
+        //glDrawArrays(GL_TRIANGLES, 0, 6);
+       glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,0);
 
 
         /* Swap front and back buffers */
