@@ -6,19 +6,28 @@
 #include "IndexBuffer.h"
 #include "VertexArray.h";
 #include "Shader.h";
+#include "VertexBufferLayout.h";
+#include "Texture.h";
 
 const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
+"layout (location = 0) in vec4 aPos;\n"
+"layout (location = 1) in vec2 texCoord;\n"
+
+"out vec2 v_TexCoord;\n"
+
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"   gl_Position = aPos;\n"
+"   v_TexCoord = texCoord;\n"
 "}\0";
 const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"uniform vec4 u_Color;\n"
+"layout (location = 0) out vec4 FragColor;\n"
+"in vec2 v_TexCoord;\n"
+"uniform sampler2D u_Texture;\n"
 "void main()\n"
 "{\n"
-"   FragColor = u_Color;\n"
+"   vec4 texColor = texture(u_Texture, v_TexCoord);\n"
+"   FragColor = texColor;\n"
 "}\n\0";
     
 int main(void)
@@ -52,16 +61,21 @@ int main(void)
     glDebugMessageCallback(MessageCallback, 0);
 
 
-    Shader shader(vertexShaderSource, fragmentShaderSource);
+
+    Shader shader(vertexShaderSource,fragmentShaderSource);
     shader.Bind();
-    shader.SetUniform4f("u_Color", 0.2f, 0.3f, 0.8f, 1.0f);
+    //shader.SetUniform4f("u_Color", 0.2f, 0.3f, 0.8f, 1.0f);
+
+    Texture tex("xerg.png");
+    tex.Bind();
+    shader.SetUniformi("u_Texture",0);
 
 
     float myfloats[] = {
-       -0.5f, -0.5f, // 0 
-        0.5f, -0.5f, // 1
-        0.5f,  0.5f,  // 2
-       -0.5f,  0.5f  // 3
+       -0.5f, -0.5f, 0.0f, 0.0f, // 0 
+        0.5f, -0.5f, 1.0f, 0.0f, // 1
+        0.5f,  0.5f, 1.0f, 1.0f, // 2
+       -0.5f,  0.5f, 0.0f, 1.0f, // 3
     };
 
     unsigned int indices[] = {
@@ -70,13 +84,18 @@ int main(void)
     };
 
 
-    VertexBuffer vb(myfloats, 4 * 2 * sizeof(float));
+    VertexBuffer vb(myfloats, 4 * 4 * sizeof(float));
     IndexBuffer ib(indices,6);
 
     VertexArray va;
     VertexBufferLayout layout;
     layout.Push<float>(2);
+    layout.Push<float>(2);
     va.AddBuffer(vb, layout);
+
+    Render render;
+
+    render.Draw(va, ib, shader);
   
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -90,12 +109,10 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
 
-        va.Bind();
-        ib.Bind();
-        
+    
 
         //glDrawArrays(GL_TRIANGLES, 0, 6);
-       glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,0);
+        render.Draw(va, ib, shader);
 
 
         /* Swap front and back buffers */

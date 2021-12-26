@@ -24,3 +24,12 @@ void GLAPIENTRY MessageCallback(GLenum source,
         (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
         type, severity, message);
 }
+
+void Render::Draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const
+{
+    va.Bind();
+    ib.Bind();
+    shader.Bind();
+    glDrawElements(GL_TRIANGLES, ib.GetCount(), GL_UNSIGNED_INT, 0);
+
+}

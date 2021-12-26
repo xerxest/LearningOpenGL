@@ -11,4 +11,5 @@ public:
 
 	void Bind() const;
 	void UnBind() const;
+	unsigned int GetCount() const;
 };
