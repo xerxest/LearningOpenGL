@@ -8,6 +8,8 @@
 #include "Shader.h";
 #include "VertexBufferLayout.h";
 #include "Texture.h";
+#include "vendor/glm/glm/glm.hpp";
+#include "vendor/glm/glm/gtc/matrix_transform.hpp";
 
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec4 aPos;\n"
@@ -15,9 +17,11 @@ const char* vertexShaderSource = "#version 330 core\n"
 
 "out vec2 v_TexCoord;\n"
 
+"uniform mat4 u_MVP;\n"
+
 "void main()\n"
 "{\n"
-"   gl_Position = aPos;\n"
+"   gl_Position = u_MVP * aPos;\n"
 "   v_TexCoord = texCoord;\n"
 "}\0";
 const char* fragmentShaderSource = "#version 330 core\n"
@@ -43,7 +47,7 @@ int main(void)
 
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT,GL_TRUE);
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    window = glfwCreateWindow(960, 540, "Hello World", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -72,10 +76,10 @@ int main(void)
 
 
     float myfloats[] = {
-       -0.5f, -0.5f, 0.0f, 0.0f, // 0 
-        0.5f, -0.5f, 1.0f, 0.0f, // 1
-        0.5f,  0.5f, 1.0f, 1.0f, // 2
-       -0.5f,  0.5f, 0.0f, 1.0f, // 3
+        100.0f, 100.0f, 0.0f, 0.0f, // 0 
+        200.0f, 100.0f, 1.0f, 0.0f, // 1
+        200.0f, 200.0f, 1.0f, 1.0f, // 2
+        100.0f, 200.0f, 0.0f, 1.0f, // 3
     };
 
     unsigned int indices[] = {
@@ -93,6 +97,14 @@ int main(void)
     layout.Push<float>(2);
     va.AddBuffer(vb, layout);
 
+    glm::mat4 proj = glm::ortho(0.0f,960.0f,0.0f,540.0f,-1.0f,1.0f);
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-100, 0, 0));
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(200, 200, 0));
+
+    glm::mat4 mvp = proj * view * model;
+
+    shader.SetUniformMat4f("u_MVP", mvp);
+
     Render render;
 
     render.Draw(va, ib, shader);
@@ -107,7 +119,6 @@ int main(void)
     {
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
-
 
     
 
